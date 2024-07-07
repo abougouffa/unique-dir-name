@@ -42,6 +42,7 @@
 
 ;;; API
 
+;;;###autoload
 (cl-defun unique-dir-name-create-or-update (dir &key ((:map map-sym) 'unique-dir-name-map-default) ((:rename-fn rename-func) nil))
   "See `unique-dir-name-register'."
   (let* ((dir (expand-file-name dir))
@@ -79,6 +80,7 @@
           (setcdr old-name unique-name)
         (puthash dir `((dir-name . ,name) (unique-name . ,unique-name)) unique-map)))))
 
+;;;###autoload
 (cl-defun unique-dir-name-register (dir &key ((:map map-sym) 'unique-dir-name-map-default) ((:rename-fn rename-func) nil))
   "Make a unique name derived from DIR.
 The :MAP is a symbol for the hash-table used to register the names, all
