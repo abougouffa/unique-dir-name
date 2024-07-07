@@ -53,7 +53,7 @@
                    with len-min = most-positive-fixnum
                    with len-max = most-negative-fixnum
                    with max-path = nil
-                   collect
+                   do
                    (let ((curr-element (gethash other-path unique-map)))
                      (when (and (not (string= dir other-path)) ; not the same dir
                                 (string= name (alist-get 'dir-name curr-element))) ; have the same name
