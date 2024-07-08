@@ -80,6 +80,11 @@
           (setcdr old-name unique-name)
         (puthash dir `((dir-name . ,name) (unique-name . ,unique-name)) unique-map)))))
 
+(cl-defun unique-dir-name-update (&key ((:map map-sym) 'unique-dir-name-map-default) ((:rename-fn rename-func) nil))
+  (let ((unique-map (eval map-sym)))
+    (dolist (path (hash-table-keys unique-map)) ; Update all the names
+      (unique-dir-name-create-or-update path :map map-sym :rename-fn rename-func))))
+
 ;;;###autoload
 (cl-defun unique-dir-name-register (dir &key ((:map map-sym) 'unique-dir-name-map-default) ((:rename-fn rename-func) nil))
   "Make a unique name derived from DIR.
@@ -95,9 +100,18 @@ the hash-table elements."
              (element (gethash dir unique-map)))
        element
      (puthash dir `((dir-name . ,name) (unique-name . ,name)) unique-map)
-     (dolist (path (hash-table-keys unique-map)) ; Update all the names
-       (unique-dir-name-create-or-update path :map map-sym :rename-fn rename-func))
+     (unique-dir-name-update :map map-sym :rename-fn rename-func)
      (gethash dir unique-map))))
+
+;;;###autoload
+(cl-defun unique-dir-name-unregister (dir &key ((:map map-sym) 'unique-dir-name-map-default) ((:rename-fn rename-func) nil))
+  "Unregister a unique name derived from DIR.
+See `unique-dir-name-register'."
+  (let* ((dir (expand-file-name dir))
+         (unique-map (eval map-sym)))
+    (remhash dir unique-map)
+    (unique-dir-name-update :map map-sym :rename-fn rename-func)
+    unique-map))
 
 
 (provide 'unique-dir-name)
