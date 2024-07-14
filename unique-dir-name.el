@@ -88,7 +88,7 @@
       t))) ; return t on newly created elements
 
 
-(cl-defun unique-dir-name--update-all (&key ((:map map-sym) 'unique-dir-name-map-default) ((:rename-fn rename-func) nil))
+(cl-defun unique-dir-name-update-all (&key ((:map map-sym) 'unique-dir-name-map-default) ((:rename-fn rename-func) nil))
   (let ((unique-map (eval map-sym)))
     (dolist (path (hash-table-keys unique-map)) ; Update all the names
       (unique-dir-name--create-or-update path :map map-sym :rename-fn rename-func))))
@@ -114,7 +114,7 @@ the hash-table elements."
              (element (gethash dir unique-map)))
        element
      (puthash dir `((dir-name . ,dir-name) (base-name . ,base-name) (unique-name . ,name)) unique-map)
-     (unique-dir-name--update-all :map map-sym :rename-fn rename-func)
+     (unique-dir-name-update-all :map map-sym :rename-fn rename-func)
      (gethash dir unique-map))))
 
 ;;;###autoload
@@ -124,7 +124,7 @@ See `unique-dir-name-register'."
   (let* ((dir (expand-file-name dir))
          (unique-map (eval map-sym)))
     (remhash dir unique-map)
-    (unique-dir-name--update-all :map map-sym :rename-fn rename-func)
+    (unique-dir-name-update-all :map map-sym :rename-fn rename-func)
     unique-map))
 
 
