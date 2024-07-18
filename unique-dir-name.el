@@ -7,9 +7,8 @@
 ;; Created: July 07, 2024
 ;; Modified: July 10, 2024
 ;; Version: 1.0.0
-;; Keywords: Symbol’s value as variable is void: finder-known-keywords
-;; Homepage: https://github.com/Symbol’s function definition is void: doom-call-process/unique-dir-name
-;; Package-Requires: ((emacs "28.1"))
+;; Homepage: https://github.com/abougouffa/unique-dir-name
+;; Package-Requires: ((emacs "29.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
