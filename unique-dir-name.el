@@ -1,4 +1,4 @@
-;;; unique-dir-name.el --- Keep unique names based on directories -*- lexical-binding: t; -*-
+;;; unique-dir-name.el --- Derive unique names based on paths -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2024 Abdelhak Bougouffa
 ;;
@@ -9,16 +9,22 @@
 ;; Version: 1.0.0
 ;; Homepage: https://github.com/abougouffa/unique-dir-name
 ;; Package-Requires: ((emacs "29.1"))
+;; SPDX-License-Identifier: BSD-3-Clause
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
 ;;; Commentary:
 ;;
-;;  Description
+;; This is a library that helps deriving unique names from paths. This can be
+;; seen as `uniquify', but for files/directories.
+;;
+;; The main usecase is to track of opened directories/projects while keeping
+;; abreviated names that uniquily identify the directory/project.
 ;;
 ;;; Code:
 
 (require 'subr-x)
+(require 'cl-macs)
 
 ;;; Unique name from directory
 
@@ -28,6 +34,7 @@
 ;;; Helpers
 
 (defun unique-dir-name--get-dir-elements (dir)
+  "Get elements for the DIR path."
   (butlast (reverse (file-name-split (directory-file-name (expand-file-name dir))))))
 
 (defun unique-dir-name--unique-elements (dir1 dir2 &optional base1 base2)
@@ -39,12 +46,13 @@ Consider custom base names BASE1 and BASE2 when non-nil."
     (when base2 (push base2 els2))
     (while-let ((el1 (car els1))
                 (el2 (car els2))
-                (_ (string= el1 el2)))
+                ((string= el1 el2)))
       (pop els1) (pop els2))
     (cons els1 els2)))
 
-(cl-defun unique-dir-name--create-or-update (dir &key (base nil) (map 'unique-dir-name-map-default) (rename-fn nil))
-  "See `unique-dir-name-register'."
+(cl-defun unique-dir-name--create-or-update (dir &key base rename-fn (map 'unique-dir-name-map-default))
+  "Create or update a unique element for DIR.
+For the meaning of :MAP, :RENAME-FN and :BASE, see `unique-dir-name-register'."
   (let* ((dir (expand-file-name dir))
          (dir-name (file-name-nondirectory (directory-file-name (expand-file-name dir))))
          (unique-map (eval map))
@@ -61,12 +69,12 @@ Consider custom base names BASE1 and BASE2 when non-nil."
                      (when (and (not (string= dir other-path)) ; not the same dir
                                 (string= name (or (alist-get 'base-name other-element)
                                                   (alist-get 'dir-name other-element))))
-                       (cl-destructuring-bind (els1 . els2) (unique-dir-name--unique-elements dir other-path base (alist-get 'base-name other-element))
-                         (let ((len (length els1)))
+                       (let ((dir-els (car (unique-dir-name--unique-elements dir other-path base (alist-get 'base-name other-element)))))
+                         (let ((len (length dir-els)))
                            (setq len-min (min len-min len))
                            (when (> len len-max)
                              (setq len-max len
-                                   max-path els1))))))
+                                   max-path dir-els))))))
                    finally return
                    (let ((s (string-join
                              (reverse (butlast max-path
@@ -88,7 +96,11 @@ Consider custom base names BASE1 and BASE2 when non-nil."
       (puthash dir `((dir-name . ,dir-name) (base-name . ,base) (unique-name . ,unique-name)) unique-map)
       t))) ; return t on newly created elements
 
-(cl-defun unique-dir-name-update-all (&key (map 'unique-dir-name-map-default) (rename-fn nil))
+(cl-defun unique-dir-name-update-all (&key rename-fn (map 'unique-dir-name-map-default))
+  "Update all unique names.
+This function can be called after manually modifying the hash table used
+to keep track of the unique names.
+For the meaning of :MAP and :RENAME-FN, see `unique-dir-name-register'."
   (let ((unique-map (eval map)))
     (dolist (path (hash-table-keys unique-map)) ; Update all the names
       (unique-dir-name--create-or-update path :map map :rename-fn rename-fn))))
@@ -96,7 +108,7 @@ Consider custom base names BASE1 and BASE2 when non-nil."
 ;;; API
 
 ;;;###autoload
-(cl-defun unique-dir-name-register (dir &key (base nil) (map 'unique-dir-name-map-default) (rename-fn nil))
+(cl-defun unique-dir-name-register (dir &key base rename-fn (map 'unique-dir-name-map-default))
   "Make a unique name derived from DIR.
 If the :BASE string is provided, it will be used as a basis for the
 unique name, otherwise, this will be calculated from the directory name
@@ -118,9 +130,9 @@ the hash-table elements."
      (gethash dir unique-map))))
 
 ;;;###autoload
-(cl-defun unique-dir-name-unregister (dir &key (map 'unique-dir-name-map-default) (rename-fn nil))
+(cl-defun unique-dir-name-unregister (dir &key rename-fn (map 'unique-dir-name-map-default))
   "Unregister a unique name derived from DIR.
-See `unique-dir-name-register'."
+For the meaning of :MAP and :RENAME-FN, see `unique-dir-name-register'."
   (let* ((dir (expand-file-name dir))
          (unique-map (eval map)))
     (remhash dir unique-map)
